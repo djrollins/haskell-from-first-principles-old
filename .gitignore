@@ -1,1 +1,4 @@
 haskell-programming-1.0RC2-screen.pdf
+.stack-work
+*.hi
+*.o
