@@ -25,10 +25,10 @@ Same as Monoid but without an identity
 
 # Functor
 
-Apply (lift) a function over a structure to transform the contents, leaving the
-structure alone.
+A Functor is a mapping between categories...?
 
-It is a mapping between categories.
+`fmap` applies (or lifts) a function over a structure to transform the contents,
+leaving the structure alone.
 
 For `Either` it only applies to the `Right` data constructor. Similarly for
 tuple pairs it only applies to the second member:
@@ -66,7 +66,7 @@ is `Just`, the result is `Just`. A `Just` argument cannot produce `Nothing`.
 
 # Applicative
 
-Application of a function inside a structure to an argument inside a structor
+Application of a function inside a structure to an argument inside a structure
 of the same type.
 
 Known as a *Monoidal Functor*.
@@ -87,9 +87,9 @@ in structure on the left.
 `pure` wraps something in the Applicative instance:
 
     pure 1 :: Maybe Int = Just 1
-    pure (+1) :: [a -> b] = Just (+1)
+    pure (+1) :: [a -> b] = [(+1)]
 
-`pure` and `<*>` are equivalent to `fmap`
+`pure` with `<*>` is equivalent to `fmap`
 
     pure (+1) <*> [1, 2] == [2, 3]
     fmap (+1)     [1, 2] == [2, 3]
@@ -116,7 +116,7 @@ Consider a smart constructor that Maybe constructs a type from lots of Maybe arg
                     Just weighty ->
                         Just (Cow nammy agey weighty)
 
-Instead, you can lift the Cow data constructor into a maybe with `pure` and
+Instead, you can lift the Cow data constructor into a Maybe with `pure` and
 then apply it to the arguments with `<*>`:
 
     createCow name' age' weight =
@@ -190,3 +190,48 @@ The function application operator `$`, can be partially applied like any other:
 
 Lifting a value into the structure is the same as lifting function application
 into the structure? I am unsure of the significance of this law...
+
+# Monad
+
+A Monad is all about lifting *monadic functions* over structure and `join`ing
+the resulting structure.
+
+Monadic functions are those that produce nested structure once lifted over a
+monadic structure:
+
+    -- createCow is a monadic function
+    createCow :: String -> Maybe Cow
+    validateName :: String -> Maybe String
+
+    fmap createCow $ validateName "Bess"
+        = Just (Just Cow "Bess")
+
+fmapping `createCow` over the result of `validateName` produces a nested Maybe.
+
+Using bind (`(>>=) :: m a -> (a -> m b) -> m b`) we can lift a monadic function
+over the `Maybe String` and flatten (`join`) the resulting nested Maybe.
+
+    validateName "Bess" >>= createCow
+        = Just (Cow "Bess")
+
+`do`-notation is syntatic sugar for binding (and sequencing) monadic functions.
+The monad instance in this case is `IO`
+
+    main :: IO ()
+    main = do
+        putStr "Tell me your name: "
+        x <- getLine
+        putStrLn $ "Hello " ++ x
+
+de-sugars into:
+
+    main =
+        putStr "Tell me your name: " >>
+        getLine >>=
+        \x -> putStrLn $ Hello " ++ x
+
+`do`-notation is just a lot cleaner when you have lots of chained binds.
+
+`(>>) :: Monad m => m a -> m b -> m b` is the *sequence operator*, which throws
+away the original first argument and returns the second. In the above example
+we are throwing away the `IO ()` that is returned by `putStrLn`.
